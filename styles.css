@@ -1,0 +1,23 @@
+
+/* LinkedIn Formatter - styles.css */
+.lk-formatter-toolbar {
+  display: inline-flex;
+  gap: 6px;
+  margin: 8px 0;
+  align-items: center;
+}
+.lk-formatter-toolbar .lk-btn {
+  border: 1px solid rgba(0,0,0,0.12);
+  background: #fff;
+  padding: 6px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  box-shadow: 0 1px 0 rgba(16,24,40,0.03);
+}
+.lk-formatter-toolbar .lk-btn:hover {
+  background: #f3f4f6;
+}
+.lk-formatter-toolbar .lk-btn:active {
+  transform: translateY(1px);
+}
