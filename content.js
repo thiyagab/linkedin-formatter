@@ -463,74 +463,115 @@
     return toolbar;
   }
 
-  // Enhanced modal injection with better duplicate prevention
-  function injectFormattingToolbar(modalContainer) {
+  // Check if editor is fully ready for interaction
+  function isEditorReady(editor) {
+    if (!editor) return false;
+
+    // Check if editor is visible and interactive
+    const rect = editor.getBoundingClientRect();
+    const isVisible = rect.width > 0 && rect.height > 0;
+    const isContentEditable = editor.getAttribute('contenteditable') === 'true';
+    const hasParentContainer = editor.closest('.ql-container') || editor.parentElement;
+
+    return isVisible && isContentEditable && hasParentContainer;
+  }
+
+  // Enhanced modal injection with retry logic and better timing
+  function injectFormattingToolbar(modalContainer, attempt = 1, maxAttempts = 5) {
     if (!modalContainer) return;
-    
-    // Multiple duplicate checks
-    if (modalContainer._lkFormatterInjected) return;
+
+    // Check if already successfully injected
     if (modalContainer.querySelector('.lk-formatter-toolbar')) return;
-    
+
+    // Don't retry if we've exceeded max attempts
+    if (attempt > maxAttempts) {
+      console.warn('LinkedIn Formatter: Max injection attempts reached');
+      return;
+    }
+
+    // Calculate timeout with exponential backoff
+    const baseTimeout = 800;
+    const timeout = baseTimeout * Math.pow(1.5, attempt - 1);
+
     setTimeout(() => {
-      // Double-check after timeout
-      if (modalContainer._lkFormatterInjected) return;
+      // Final check for existing toolbar
       if (modalContainer.querySelector('.lk-formatter-toolbar')) return;
-      
+
       // Find the editor
       const editor = modalContainer.querySelector('.ql-editor[contenteditable="true"]');
-      console.log('Editor..', editor);
-      if (!editor) return;
-      console.log('In ...', editor);
-      // Mark as injected immediately
-      modalContainer._lkFormatterInjected = true;
+
+      // Check if editor is ready
+      if (!isEditorReady(editor)) {
+        console.log(`LinkedIn Formatter: Editor not ready, attempt ${attempt}/${maxAttempts}`);
+        // Retry with next attempt
+        injectFormattingToolbar(modalContainer, attempt + 1, maxAttempts);
+        return;
+      }
+
+      console.log(`LinkedIn Formatter: Editor ready on attempt ${attempt}`);
+
+      // Mark as processing to prevent duplicate attempts
+      if (modalContainer._lkFormatterProcessing) return;
+      modalContainer._lkFormatterProcessing = true;
 
       // Find the best container for the toolbar
-      const editorContainer = editor.closest('.ql-container') || 
-                             editor.closest('.editor-container') || 
+      const editorContainer = editor.closest('.ql-container') ||
+                             editor.closest('.editor-container') ||
                              editor.closest('[data-test-editor-container]') ||
                              editor.parentElement;
-      
+
       if (!editorContainer) {
-        modalContainer._lkFormatterInjected = false;
+        console.warn('LinkedIn Formatter: No suitable editor container found');
+        modalContainer._lkFormatterProcessing = false;
         return;
       }
 
       // Final duplicate check
       if (editorContainer.parentNode.querySelector('.lk-formatter-toolbar')) {
+        modalContainer._lkFormatterProcessing = false;
         return;
       }
 
       // Create and insert toolbar
       const toolbar = buildFormattingToolbar();
-      
+
       try {
         editorContainer.parentNode.insertBefore(toolbar, editorContainer);
         console.log('LinkedIn Formatter: Successfully injected formatting toolbar');
+        modalContainer._lkFormatterInjected = true;
       } catch (error) {
         console.warn('LinkedIn Formatter: Failed to inject toolbar:', error);
-        modalContainer._lkFormatterInjected = false;
+        // Retry on failure
+        injectFormattingToolbar(modalContainer, attempt + 1, maxAttempts);
+      } finally {
+        modalContainer._lkFormatterProcessing = false;
       }
-    }, 600);
+    }, timeout);
   }
 
-  // Enhanced modal detection
+  // Enhanced modal detection with better editor checking
   function findAndInjectIntoModals() {
     const modalSelectors = [
       "[data-test-modal-id='sharebox']",
       "[data-test-modal-id='share-update-v2']",
       ".share-creation-state",
       ".artdeco-modal[role='dialog']",
-      "[data-test-modal-container='true']"
+      "[data-test-modal-container='true']",
+      "[data-test-modal]",
+      ".share-box-footer"
     ];
 
     let injected = false;
-    
+
     modalSelectors.forEach(selector => {
       const modals = document.querySelectorAll(selector);
       modals.forEach(modal => {
-        if (modal.querySelector('.ql-editor[contenteditable="true"]') && 
-            !modal._lkFormatterInjected && 
-            !modal.querySelector('.lk-formatter-toolbar')) {
+        // More robust checks
+        const hasEditor = modal.querySelector('.ql-editor[contenteditable="true"]');
+        const alreadyInjected = modal._lkFormatterInjected || modal.querySelector('.lk-formatter-toolbar');
+        const isProcessing = modal._lkFormatterProcessing;
+
+        if (hasEditor && !alreadyInjected && !isProcessing) {
           injectFormattingToolbar(modal);
           injected = true;
         }
@@ -540,7 +581,7 @@
     return injected;
   }
 
-  // Enhanced DOM observer
+  // Enhanced DOM observer with better debouncing
   let observerTimeout;
   const debouncedObserver = new MutationObserver((mutations) => {
     clearTimeout(observerTimeout);
@@ -548,34 +589,40 @@
       for (const mutation of mutations) {
         for (const node of mutation.addedNodes) {
           if (!(node instanceof HTMLElement)) continue;
-          
+
           // Skip our own elements
-          if (node.classList?.contains('lk-formatter-toolbar') || 
+          if (node.classList?.contains('lk-formatter-toolbar') ||
               node.classList?.contains('lk-formatter-notification')) continue;
-          
-          // Check for LinkedIn modal elements
+
+          // Check for LinkedIn modal elements with expanded detection
           const isModalElement = node.getAttribute && (
             node.getAttribute('data-test-modal-id') === 'sharebox' ||
             node.getAttribute('data-test-modal-id') === 'share-update-v2' ||
             node.classList?.contains('share-creation-state') ||
-            node.getAttribute('role') === 'dialog'
+            node.getAttribute('role') === 'dialog' ||
+            node.hasAttribute('data-test-modal')
           );
 
           if (isModalElement) {
             injectFormattingToolbar(node);
           } else if (node.querySelector) {
-            // Check for nested modals
+            // Check for nested modals with more selectors
             const nestedModal = node.querySelector(
-              "[data-test-modal-id='sharebox'], [data-test-modal-id='share-update-v2'], .share-creation-state"
+              "[data-test-modal-id='sharebox'], [data-test-modal-id='share-update-v2'], .share-creation-state, [data-test-modal], .artdeco-modal[role='dialog']"
             );
-            if (nestedModal && 
+            if (nestedModal &&
                 nestedModal.querySelector('.ql-editor[contenteditable="true"]')) {
               injectFormattingToolbar(nestedModal);
+            }
+
+            // Also check if the added node contains an editor directly
+            if (node.querySelector('.ql-editor[contenteditable="true"]')) {
+              injectFormattingToolbar(node);
             }
           }
         }
       }
-    }, 300); // Debounce by 300ms
+    }, 500); // Increased debounce to 500ms for better stability
   });
 
   // Start observing
@@ -591,19 +638,36 @@
     console.log('Supported styles:', Object.keys(STYLE_MAPS));
   }
 
-  // Initialize after DOM is ready
+  // Initialize after DOM is ready with improved timing
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => setTimeout(initialize, 1200));
+    document.addEventListener('DOMContentLoaded', () => {
+      // Multiple initialization attempts
+      setTimeout(initialize, 1000);
+      setTimeout(findAndInjectIntoModals, 2000);
+      setTimeout(findAndInjectIntoModals, 4000);
+    });
   } else {
-    setTimeout(initialize, 1200);
+    // Multiple initialization attempts for immediate load
+    setTimeout(initialize, 800);
+    setTimeout(findAndInjectIntoModals, 1500);
+    setTimeout(findAndInjectIntoModals, 3000);
   }
 
-  // Handle LinkedIn SPA navigation
+  // Handle LinkedIn SPA navigation with multiple retry attempts
   let currentUrl = location.href;
   new MutationObserver(() => {
     if (location.href !== currentUrl) {
       currentUrl = location.href;
-      setTimeout(findAndInjectIntoModals, 1500);
+      // Clear any existing injection flags on navigation
+      document.querySelectorAll('[data-test-modal-id], .artdeco-modal, .share-creation-state').forEach(modal => {
+        modal._lkFormatterInjected = false;
+        modal._lkFormatterProcessing = false;
+      });
+
+      // Multiple attempts after navigation
+      setTimeout(findAndInjectIntoModals, 1000);
+      setTimeout(findAndInjectIntoModals, 2500);
+      setTimeout(findAndInjectIntoModals, 4000);
     }
   }).observe(document, { subtree: true, childList: true });
 
