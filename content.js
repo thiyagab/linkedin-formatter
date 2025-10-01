@@ -242,6 +242,115 @@
     }
   }
 
+  // AI text polishing function
+  async function polishSelectedText() {
+    const selection = window.getSelection();
+    if (!selection || !selection.rangeCount) {
+      showNotification('Please select some text first.', 'warning');
+      return;
+    }
+
+    const selectedText = selection.toString();
+    if (!selectedText.trim()) {
+      showNotification('Please select some text first.', 'warning');
+      return;
+    }
+
+    const settings = loadSettings();
+    const { apiProvider, apiKey, modelName } = settings;
+    const model = modelName || getDefaultModel(apiProvider);
+
+    if (!apiKey) {
+      showNotification('API key not configured. Open settings (🔧) to add your key.', 'warning');
+      return;
+    }
+
+    showNotification('Polishing text...', 'info');
+
+    const prompt = `Polish the following text for grammar, sentence flow, and clarity while sticking closely to the original content and meaning. Do not add, remove, or significantly alter ideas. Return only the polished text. At the end, append the top 3 most relevant hashtags for this content, each prefixed with # and on new lines. Text: ${selectedText}`;
+
+    let url, options;
+
+    try {
+      if (apiProvider === 'openai') {
+        url = 'https://api.openai.com/v1/chat/completions';
+        options = {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            model,
+            messages: [{ role: 'user', content: prompt }],
+            max_tokens: 1000,
+            temperature: 0.3
+          })
+        };
+      } else if (apiProvider === 'gemini') {
+        url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+        options = {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }]
+          })
+        };
+      } else if (apiProvider === 'openrouter') {
+        url = 'https://openrouter.ai/api/v1/chat/completions';
+        options = {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json',
+            'HTTP-Referer': 'https://www.linkedin.com',
+            'X-Title': 'LinkedIn Formatter'
+          },
+          body: JSON.stringify({
+            model,
+            messages: [{ role: 'user', content: prompt }],
+            max_tokens: 1000
+          })
+        };
+      } else {
+        throw new Error('Unknown API provider');
+      }
+
+      const response = await fetch(url, options);
+      if (!response.ok) {
+        throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+
+      let newText;
+      if (apiProvider === 'openai' || apiProvider === 'openrouter') {
+        newText = data.choices[0].message.content.trim();
+      } else if (apiProvider === 'gemini') {
+        newText = data.candidates[0].content.parts[0].text.trim();
+      }
+
+      showNotification('Text polished successfully!', 'success');
+
+      if (insertTextAdvanced(newText)) {
+        // Success
+      } else {
+        copyToClipboardSafely(newText).then(success => {
+          if (success) {
+            showNotification('Polished text copied to clipboard! Paste it manually (Ctrl+V)', 'info');
+          } else {
+            showNotification('Insertion failed. Text is ready to copy.', 'warning');
+          }
+        });
+      }
+    } catch (error) {
+      console.error('AI polishing error:', error);
+      showNotification(`AI polishing failed: ${error.message}. Check your API key.`, 'error');
+    }
+  }
+
   // Notification system
   function showNotification(message, type = 'info') {
     const existing = document.querySelector('.lk-formatter-notification');
@@ -316,11 +425,12 @@
       const saved = localStorage.getItem(SETTINGS_STORAGE_KEY);
       return saved ? JSON.parse(saved) : {
         apiProvider: 'openai',
-        apiKey: ''
+        apiKey: '',
+        modelName: ''
       };
     } catch (error) {
       console.warn('LinkedIn Formatter: Failed to load settings:', error);
-      return { apiProvider: 'openai', apiKey: '' };
+      return { apiProvider: 'openai', apiKey: '', modelName: '' };
     }
   }
 
@@ -332,6 +442,13 @@
       console.warn('LinkedIn Formatter: Failed to save settings:', error);
       return false;
     }
+  }
+  
+  function getDefaultModel(provider) {
+    if (provider === 'openai') return 'gpt-3.5-turbo';
+    if (provider === 'gemini') return 'gemini-1.5-flash';
+    if (provider === 'openrouter') return 'meta-llama/llama-3.1-8b-instruct:free';
+    return '';
   }
 
   // Create settings popup
@@ -349,10 +466,10 @@
     `;
 
     popup.innerHTML = `
-      <div style="margin-bottom: 12px; font-weight: 600; color: #333;">Settings</div>
+     
 
       <div style="margin-bottom: 12px;">
-        <label style="display: block; margin-bottom: 4px; color: #555;">API Provider:</label>
+        
         <select id="lk-api-provider" style="width: 100%; padding: 6px; border: 1px solid #ccc; border-radius: 4px;">
           <option value="openai" ${settings.apiProvider === 'openai' ? 'selected' : ''}>OpenAI</option>
           <option value="gemini" ${settings.apiProvider === 'gemini' ? 'selected' : ''}>Gemini</option>
@@ -361,10 +478,17 @@
       </div>
 
       <div style="margin-bottom: 16px;">
-        <label style="display: block; margin-bottom: 4px; color: #555;">API Key:</label>
+        
         <input type="password" id="lk-api-key" placeholder="Enter your API key"
                style="width: 100%; padding: 6px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;"
                value="${settings.apiKey}">
+      </div>
+
+      <div style="margin-bottom: 16px;">
+        
+        <input type="text" id="lk-model-name" placeholder="model-name (e.g., gpt-3.5-turbo)"
+               style="width: 100%; padding: 6px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;"
+               value="${settings.modelName || ''}">
       </div>
 
       <div style="display: flex; gap: 8px; justify-content: flex-end;">
@@ -376,6 +500,7 @@
     // Add event listeners
     const providerSelect = popup.querySelector('#lk-api-provider');
     const apiKeyInput = popup.querySelector('#lk-api-key');
+    const modelNameInput = popup.querySelector('#lk-model-name');
     const cancelButton = popup.querySelector('#lk-settings-cancel');
     const saveButton = popup.querySelector('#lk-settings-save');
 
@@ -386,7 +511,8 @@
     saveButton.addEventListener('click', () => {
       const newSettings = {
         apiProvider: providerSelect.value,
-        apiKey: apiKeyInput.value.trim()
+        apiKey: apiKeyInput.value.trim(),
+        modelName: modelNameInput.value.trim()
       };
 
       if (saveSettings(newSettings)) {
@@ -514,12 +640,12 @@
     `;
 
     const buttons = [
-      { text: '𝐁', title: 'Bold - Mathematical Bold Unicode', style: 'bold' },
-      { text: '𝐼', title: 'Italic - Mathematical Italic Unicode', style: 'italic' },
-      { text: '𝑩𝑰', title: 'Bold Italic - Mathematical Bold Italic', style: 'boldItalic' },
-      { text: '𝗦𝗕', title: 'Sans Bold - Mathematical Sans-Serif Bold', style: 'sansBold' },
-      { text: '𝘚𝘐', title: 'Sans Italic - Mathematical Sans-Serif Italic', style: 'sansItalic' },
-      { text: '𝙼', title: 'Monospace - Mathematical Monospace', style: 'monospace' }
+      { text: '𝐁', title: 'Bold - Bold Unicode', style: 'bold' },
+      { text: '𝐼', title: 'Italic -  talic Unicode', style: 'italic' },
+      { text: '𝑩𝑰', title: 'Bold Italic - Bold Italic', style: 'boldItalic' },
+      // { text: '𝗦𝗕', title: 'Sans Bold - Mathematical Sans-Serif Bold', style: 'sansBold' },
+      // { text: '𝘚𝘐', title: 'Sans Italic - Mathematical Sans-Serif Italic', style: 'sansItalic' },
+      { text: '𝙼', title: 'Monospace - Monospace', style: 'monospace' }
     ];
 
     buttons.forEach(({ text, title, style }) => {
@@ -538,6 +664,10 @@
     const listDropdown = createListDropdown();
     toolbar.appendChild(listDropdown);
 
+    // Add Polish button
+    const polishButton = createStyledButton('✨', 'Polish text with AI', polishSelectedText);
+    toolbar.appendChild(polishButton);
+
     // Add separator
     const separator2 = document.createElement('div');
     separator2.style.cssText = `
@@ -546,7 +676,7 @@
     toolbar.appendChild(separator2);
 
     // Add settings button
-    const settingsButton = createStyledButton('⚙️', 'Settings - Configure API providers', () => {
+    const settingsButton = createStyledButton('🔧', 'Settings - Configure API providers', () => {
       const popup = toolbar.querySelector('.lk-formatter-settings-popup');
       if (popup.style.display === 'none' || !popup.style.display) {
         popup.style.display = 'block';
