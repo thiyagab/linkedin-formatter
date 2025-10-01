@@ -2,7 +2,7 @@
 // Uses proper Unicode Mathematical Alphanumeric Symbols for text formatting
 // Compatible with LinkedIn, Twitter, Instagram, and other social media platforms
 
-(function() {
+(function () {
   'use strict';
 
   console.log('🚀 LinkedIn Formatter v7.0 LOADING - Universal LinkedIn Profile Support');
@@ -75,12 +75,12 @@
     const styleNames = Object.keys(STYLE_MAPS);
     for (const styleName of styleNames) {
       const styleChars = styleName === 'bold' ? BOLD_CHARS :
-                        styleName === 'italic' ? ITALIC_CHARS :
-                        styleName === 'boldItalic' ? BOLD_ITALIC_CHARS :
-                        styleName === 'sansBold' ? SANS_BOLD_CHARS :
-                        styleName === 'sansItalic' ? SANS_ITALIC_CHARS :
-                        styleName === 'monospace' ? MONOSPACE_CHARS :
-                        styleName === 'doubleStruck' ? DOUBLE_STRUCK_CHARS : '';
+        styleName === 'italic' ? ITALIC_CHARS :
+          styleName === 'boldItalic' ? BOLD_ITALIC_CHARS :
+            styleName === 'sansBold' ? SANS_BOLD_CHARS :
+              styleName === 'sansItalic' ? SANS_ITALIC_CHARS :
+                styleName === 'monospace' ? MONOSPACE_CHARS :
+                  styleName === 'doubleStruck' ? DOUBLE_STRUCK_CHARS : '';
       const styleArray = Array.from(styleChars);
       for (const char of chars) {
         if (styleArray.includes(char)) {
@@ -91,6 +91,48 @@
     return null;
   }
 
+  // List formatting function
+  function formatListWithBullet(bulletStyle) {
+    const selection = window.getSelection();
+    if (!selection || !selection.rangeCount) {
+      showNotification('Please select some text first', 'warning');
+      return;
+    }
+
+    const selectedText = selection.toString();
+    if (!selectedText.trim()) {
+      showNotification('Please select some text first', 'warning');
+      return;
+    }
+
+    // Split into lines and add bullets
+    const lines = selectedText.split('\n');
+    let formattedLines = lines.map(line => {
+      const trimmedLine = line.trim();
+      if (trimmedLine)  // ignore empty lines 
+      // Remove existing bullets if present
+      {
+        const withoutBullet = trimmedLine.replace(/^[•👉✅✔]\s*/, '');
+        return `${bulletStyle} ${withoutBullet}`;
+      }
+    });
+    formattedLines=formattedLines.filter(Boolean); // Remove any undefined entries
+    console.log('Formatted Lines:', formattedLines);
+    const formattedText = formattedLines.join('\n');
+
+    if (insertTextAdvanced(formattedText)) {
+      // Success
+    } else {
+      copyToClipboardSafely(formattedText).then(success => {
+        if (success) {
+          showNotification('List formatted text copied to clipboard! Paste it manually (Ctrl+V)', 'info');
+        } else {
+          showNotification('List formatting failed. Please try again.', 'error');
+        }
+      });
+    }
+  }
+
   // Advanced text insertion
   function insertTextAdvanced(newText) {
     const selection = window.getSelection();
@@ -99,7 +141,7 @@
     try {
       const range = selection.getRangeAt(0);
       const editor = document.querySelector('.ql-editor[contenteditable="true"]') ||
-                    document.querySelector('[contenteditable="true"]');
+        document.querySelector('[contenteditable="true"]');
 
       if (!editor) return false;
 
@@ -266,6 +308,196 @@
     return button;
   }
 
+  // Settings management
+  const SETTINGS_STORAGE_KEY = 'linkedin-formatter-settings';
+
+  function loadSettings() {
+    try {
+      const saved = localStorage.getItem(SETTINGS_STORAGE_KEY);
+      return saved ? JSON.parse(saved) : {
+        apiProvider: 'openai',
+        apiKey: ''
+      };
+    } catch (error) {
+      console.warn('LinkedIn Formatter: Failed to load settings:', error);
+      return { apiProvider: 'openai', apiKey: '' };
+    }
+  }
+
+  function saveSettings(settings) {
+    try {
+      localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
+      return true;
+    } catch (error) {
+      console.warn('LinkedIn Formatter: Failed to save settings:', error);
+      return false;
+    }
+  }
+
+  // Create settings popup
+  function createSettingsPopup() {
+    const settings = loadSettings();
+
+    const popup = document.createElement('div');
+    popup.className = 'lk-formatter-settings-popup';
+    popup.style.cssText = `
+      position: absolute; top: 100%; left: 0; z-index: 10001;
+      background: white; border: 1px solid #ccc; border-radius: 6px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15); padding: 16px;
+      width: 280px; font-family: system-ui, -apple-system, sans-serif;
+      font-size: 14px; display: none;
+    `;
+
+    popup.innerHTML = `
+      <div style="margin-bottom: 12px; font-weight: 600; color: #333;">Settings</div>
+
+      <div style="margin-bottom: 12px;">
+        <label style="display: block; margin-bottom: 4px; color: #555;">API Provider:</label>
+        <select id="lk-api-provider" style="width: 100%; padding: 6px; border: 1px solid #ccc; border-radius: 4px;">
+          <option value="openai" ${settings.apiProvider === 'openai' ? 'selected' : ''}>OpenAI</option>
+          <option value="gemini" ${settings.apiProvider === 'gemini' ? 'selected' : ''}>Gemini</option>
+          <option value="openrouter" ${settings.apiProvider === 'openrouter' ? 'selected' : ''}>OpenRouter</option>
+        </select>
+      </div>
+
+      <div style="margin-bottom: 16px;">
+        <label style="display: block; margin-bottom: 4px; color: #555;">API Key:</label>
+        <input type="password" id="lk-api-key" placeholder="Enter your API key"
+               style="width: 100%; padding: 6px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;"
+               value="${settings.apiKey}">
+      </div>
+
+      <div style="display: flex; gap: 8px; justify-content: flex-end;">
+        <button id="lk-settings-cancel" style="padding: 6px 12px; border: 1px solid #ccc; border-radius: 4px; background: white; cursor: pointer;">Cancel</button>
+        <button id="lk-settings-save" style="padding: 6px 12px; border: 1px solid #0073b1; border-radius: 4px; background: #0073b1; color: white; cursor: pointer;">Save</button>
+      </div>
+    `;
+
+    // Add event listeners
+    const providerSelect = popup.querySelector('#lk-api-provider');
+    const apiKeyInput = popup.querySelector('#lk-api-key');
+    const cancelButton = popup.querySelector('#lk-settings-cancel');
+    const saveButton = popup.querySelector('#lk-settings-save');
+
+    cancelButton.addEventListener('click', () => {
+      popup.style.display = 'none';
+    });
+
+    saveButton.addEventListener('click', () => {
+      const newSettings = {
+        apiProvider: providerSelect.value,
+        apiKey: apiKeyInput.value.trim()
+      };
+
+      if (saveSettings(newSettings)) {
+        showNotification('Settings saved successfully!', 'success');
+        popup.style.display = 'none';
+      } else {
+        showNotification('Failed to save settings', 'error');
+      }
+    });
+
+    // Hide popup when clicking outside
+    document.addEventListener('click', (e) => {
+      if (!popup.contains(e.target) && !e.target.closest('.lk-settings-btn')) {
+        popup.style.display = 'none';
+      }
+    });
+
+    return popup;
+  }
+
+  // Create list format dropdown
+  function createListDropdown() {
+    const container = document.createElement('div');
+    container.style.cssText = `
+      position: relative;
+      display: inline-block;
+    `;
+
+    const dropdownButton = createStyledButton('☰', 'List Format - Add bullets to lines', () => {
+      const dropdown = container.querySelector('.lk-list-dropdown');
+      if (dropdown.style.display === 'none' || !dropdown.style.display) {
+        dropdown.style.display = 'block';
+      } else {
+        dropdown.style.display = 'none';
+      }
+    });
+    dropdownButton.classList.add('lk-list-btn');
+    container.appendChild(dropdownButton);
+
+    const dropdown = document.createElement('div');
+    dropdown.className = 'lk-list-dropdown';
+    dropdown.style.cssText = `
+      position: absolute;
+      top: 100%;
+      left: 0;
+      z-index: 10001;
+      background: white;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      padding: 4px;
+      display: none;
+      min-width: 120px;
+      margin-top: 2px;
+    `;
+
+    const listStyles = [
+      { bullet: '•', label: '• Bullet' },
+      { bullet: '👉', label: '👉 Pointer' },
+      { bullet: '✅', label: '✅ Check' },
+      { bullet: '✔', label: '✔ Checkmark' }
+    ];
+
+    listStyles.forEach(({ bullet, label }) => {
+      const option = document.createElement('button');
+      option.type = 'button';
+      option.textContent = label;
+      option.style.cssText = `
+        display: block;
+        width: 100%;
+        padding: 6px 10px;
+        border: none;
+        background: white;
+        color: #333;
+        text-align: left;
+        cursor: pointer;
+        font-size: 13px;
+        font-family: system-ui, -apple-system, sans-serif;
+        border-radius: 3px;
+      `;
+
+      option.addEventListener('mouseenter', () => {
+        option.style.background = '#f0f2f5';
+      });
+
+      option.addEventListener('mouseleave', () => {
+        option.style.background = 'white';
+      });
+
+      option.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        formatListWithBullet(bullet);
+        dropdown.style.display = 'none';
+      });
+
+      dropdown.appendChild(option);
+    });
+
+    container.appendChild(dropdown);
+
+    // Hide dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+      if (!container.contains(e.target)) {
+        dropdown.style.display = 'none';
+      }
+    });
+
+    return container;
+  }
+
   // Build formatting toolbar
   function buildFormattingToolbar() {
     const toolbar = document.createElement('div');
@@ -278,6 +510,7 @@
       background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
       display: flex; flex-wrap: wrap; gap: 2px; align-items: center;
       font-family: system-ui, -apple-system, sans-serif; box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      position: sticky; top: 0; z-index: 1000;
     `;
 
     const buttons = [
@@ -293,6 +526,40 @@
       const button = createStyledButton(text, title, () => formatSelectedText(style));
       toolbar.appendChild(button);
     });
+
+    // Add separator
+    const separator = document.createElement('div');
+    separator.style.cssText = `
+      width: 1px; height: 20px; background: #ccc; margin: 0 4px;
+    `;
+    toolbar.appendChild(separator);
+
+    // Add list format dropdown
+    const listDropdown = createListDropdown();
+    toolbar.appendChild(listDropdown);
+
+    // Add separator
+    const separator2 = document.createElement('div');
+    separator2.style.cssText = `
+      width: 1px; height: 20px; background: #ccc; margin: 0 4px;
+    `;
+    toolbar.appendChild(separator2);
+
+    // Add settings button
+    const settingsButton = createStyledButton('⚙️', 'Settings - Configure API providers', () => {
+      const popup = toolbar.querySelector('.lk-formatter-settings-popup');
+      if (popup.style.display === 'none' || !popup.style.display) {
+        popup.style.display = 'block';
+      } else {
+        popup.style.display = 'none';
+      }
+    });
+    settingsButton.classList.add('lk-settings-btn');
+    toolbar.appendChild(settingsButton);
+
+    // Add settings popup
+    const settingsPopup = createSettingsPopup();
+    toolbar.appendChild(settingsPopup);
 
     return toolbar;
   }
@@ -447,9 +714,9 @@
         // Strategy A: Before input's container
         () => {
           const container = targetInput.closest('.ql-container') ||
-                           targetInput.closest('.share-creation-state') ||
-                           targetInput.closest('.share-box') ||
-                           targetInput.closest('.composer');
+            targetInput.closest('.share-creation-state') ||
+            targetInput.closest('.share-box') ||
+            targetInput.closest('.composer');
           if (container && container.parentElement) {
             const toolbar = buildFormattingToolbar();
             container.parentElement.insertBefore(toolbar, container);
@@ -461,9 +728,9 @@
         // Strategy B: After input's container
         () => {
           const container = targetInput.closest('.ql-container') ||
-                           targetInput.closest('.share-creation-state') ||
-                           targetInput.closest('.share-box') ||
-                           targetInput.closest('.composer');
+            targetInput.closest('.share-creation-state') ||
+            targetInput.closest('.share-box') ||
+            targetInput.closest('.composer');
           if (container && container.parentElement) {
             const toolbar = buildFormattingToolbar();
             container.parentElement.insertBefore(toolbar, container.nextSibling);
@@ -622,10 +889,10 @@
         mutations.forEach(mutation => {
           mutation.addedNodes.forEach(node => {
             if (node instanceof HTMLElement &&
-                !node.classList?.contains('lk-formatter-toolbar')) {
+              !node.classList?.contains('lk-formatter-toolbar')) {
 
               if (node.matches('[contenteditable], .share-creation-state, .share-box, .composer') ||
-                  node.querySelector('[contenteditable]')) {
+                node.querySelector('[contenteditable]')) {
                 shouldScan = true;
               }
             }
