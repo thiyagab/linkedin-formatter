@@ -1,11 +1,11 @@
-// LinkedIn Formatter - content.js v5.0 - Ultimate Combined Strategy
+// LinkedIn AI Post Formatter - content.js v5.0 - Ultimate Combined Strategy
 // Uses proper Unicode Mathematical Alphanumeric Symbols for text formatting
 // Compatible with LinkedIn, Twitter, Instagram, and other social media platforms
 
 (function () {
   'use strict';
 
-  console.log('🚀 LinkedIn Formatter v7.0 LOADING - Universal LinkedIn Profile Support');
+  console.log('🚀 LinkedIn AI Post Formatter v7.0 LOADING - Universal LinkedIn Profile Support');
 
   // Unicode Mathematical Alphanumeric Symbols mappings
   const NORMAL_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
@@ -165,7 +165,7 @@
 
       return true;
     } catch (error) {
-      console.warn('LinkedIn Formatter: Advanced insertion failed:', error);
+      console.warn('LinkedIn AI Post Formatter: Advanced insertion failed:', error);
       return false;
     }
   }
@@ -229,18 +229,22 @@
     }
 
     const convertedText = convertText(selectedText, styleMap);
-    if (insertTextAdvanced(convertedText)) {
-      // Success
-    } else {
-      copyToClipboardSafely(convertedText).then(success => {
-        if (success) {
-          showNotification(`${style} text copied to clipboard! Paste it manually (Ctrl+V)`, 'info');
-        } else {
-          showNotification('Formatting failed. Please try again.', 'error');
-        }
-      });
-    }
+    insertOrCopy(convertedText, style);
   }
+
+  function insertOrCopy(text, styleName) {
+     if (insertTextAdvanced(text)) {
+       // Success
+     } else {
+       copyToClipboardSafely(text).then(success => {
+         if (success) {
+           showNotification(`${styleName} text copied to clipboard! Paste it manually (Ctrl+V)`, 'info');
+         } else {
+           showNotification('Formatting failed. Please try again.', 'error');
+         }
+       });
+     }
+   }
 
   // AI text polishing function
   async function polishSelectedText() {
@@ -388,10 +392,10 @@
     button.className = `lk-format-btn ${isActive ? 'active' : ''}`;
 
     button.style.cssText = `
-      padding: 6px 10px; margin: 0 2px; border: 1px solid ${isActive ? '#0073b1' : '#ccc'};
-      border-radius: 3px; background: ${isActive ? '#0073b1' : 'white'};
-      color: ${isActive ? 'white' : '#333'}; cursor: pointer; font-size: 13px;
-      font-family: system-ui, -apple-system, sans-serif; transition: all 0.2s ease; min-width: 32px;
+      padding: 6px 10px; margin: 0; border: none;
+      border-radius: 6px; background: transparent;
+      color: #333; cursor: pointer; font-size: 14px;
+      font-family: system-ui, -apple-system, sans-serif; transition: background-color 0.2s ease; min-width: 32px;
     `;
 
     button.addEventListener('click', (e) => {
@@ -402,15 +406,13 @@
 
     button.addEventListener('mouseenter', () => {
       if (!isActive) {
-        button.style.background = '#f0f2f5';
-        button.style.borderColor = '#0073b1';
+        button.style.backgroundColor = '#f0f2f5';
       }
     });
 
     button.addEventListener('mouseleave', () => {
       if (!isActive) {
-        button.style.background = 'white';
-        button.style.borderColor = '#ccc';
+        button.style.backgroundColor = 'transparent';
       }
     });
 
@@ -429,7 +431,7 @@
         modelName: ''
       };
     } catch (error) {
-      console.warn('LinkedIn Formatter: Failed to load settings:', error);
+      console.warn('LinkedIn AI Post Formatter: Failed to load settings:', error);
       return { apiProvider: 'openai', apiKey: '', modelName: '' };
     }
   }
@@ -439,7 +441,7 @@
       localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
       return true;
     } catch (error) {
-      console.warn('LinkedIn Formatter: Failed to save settings:', error);
+      console.warn('LinkedIn AI Post Formatter: Failed to save settings:', error);
       return false;
     }
   }
@@ -631,14 +633,7 @@
     toolbar.setAttribute('role', 'toolbar');
     toolbar.setAttribute('aria-label', 'Text formatting toolbar');
 
-    toolbar.style.cssText = `
-      margin: 10px 0; padding: 8px; border: 1px solid #e0e0e0; border-radius: 6px;
-      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-      display: flex; flex-wrap: wrap; gap: 2px; align-items: center;
-      font-family: system-ui, -apple-system, sans-serif; box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-      position: sticky; top: 0; z-index: 1000;
-    `;
-
+    // Styles are now primarily in styles.css
     const buttons = [
       { text: '𝐁', title: 'Bold - Bold Unicode', style: 'bold' },
       { text: '𝐼', title: 'Italic -  talic Unicode', style: 'italic' },
@@ -656,7 +651,7 @@
     // Add separator
     const separator = document.createElement('div');
     separator.style.cssText = `
-      width: 1px; height: 20px; background: #ccc; margin: 0 4px;
+      width: 1px; height: 20px; background: #e0e0e0; margin: 0 4px;
     `;
     toolbar.appendChild(separator);
 
@@ -671,7 +666,7 @@
     // Add separator
     const separator2 = document.createElement('div');
     separator2.style.cssText = `
-      width: 1px; height: 20px; background: #ccc; margin: 0 4px;
+      width: 1px; height: 20px; background: #e0e0e0; margin: 0 4px;
     `;
     toolbar.appendChild(separator2);
 
@@ -694,420 +689,70 @@
     return toolbar;
   }
 
-  // ULTIMATE COMBINED STRATEGY SYSTEM
-  class UltimateLinkedInFormatter {
-    constructor() {
-      this.injectedElements = new WeakSet();
-      this.currentUrl = location.href;
-      this.isCreatePostOverlay = false;
-      this.overlayPollingInterval = null;
-      this.regularPollingInterval = null;
-      this.observers = [];
-    }
+  // --- Floating Toolbar Implementation ---
 
-    // Strategy 1: Universal LinkedIn URL Detection
-    checkCreatePostOverlay() {
-      const currentUrl = location.href;
+  function initializeFloatingToolbar() {
+    console.log('🔥 LinkedIn AI Post Formatter: Initializing floating toolbar...');
 
-      // Universal LinkedIn overlay patterns
-      const isOverlay =
-        // Any LinkedIn profile create post overlay
-        currentUrl.includes('/overlay/create-post/') ||
-        // Any LinkedIn share overlay
-        currentUrl.includes('/overlay/share-') ||
-        // Any LinkedIn compose overlay
-        currentUrl.includes('/overlay/compose-') ||
-        // Feed create post overlay
-        currentUrl.includes('linkedin.com/feed/') && currentUrl.includes('/overlay/create-post/') ||
-        // Home feed overlay
-        currentUrl.includes('linkedin.com/') && currentUrl.includes('/overlay/create-post/') ||
-        // Any LinkedIn domain with create post overlay
-        (currentUrl.includes('linkedin.com') && currentUrl.includes('/overlay/create-post/'));
+    const toolbar = buildFormattingToolbar();
+    document.body.appendChild(toolbar);
 
-      if (isOverlay !== this.isCreatePostOverlay) {
-        this.isCreatePostOverlay = isOverlay;
-        console.log(`🌐 LinkedIn Formatter: Overlay status changed to ${isOverlay}`);
-        console.log(`🔗 Current URL: ${currentUrl}`);
+    let hideTimeout;
+    let selectionTimeout;
 
-        if (isOverlay) {
-          this.startOverlayMode();
-        } else {
-          this.stopOverlayMode();
+    const handleSelectionChange = () => {
+      clearTimeout(hideTimeout);
+      clearTimeout(selectionTimeout);
+
+      selectionTimeout = setTimeout(() => {
+        const selection = window.getSelection();
+
+      // Check if selection is valid and inside a LinkedIn editor
+      if (selection && selection.rangeCount > 0 && !selection.isCollapsed) {
+        const range = selection.getRangeAt(0);
+        const selectedText = selection.toString().trim();
+        const parentEditor = range.startContainer.parentElement?.closest('.ql-editor[contenteditable="true"]');
+
+        if (selectedText && parentEditor) {
+          const rect = range.getBoundingClientRect();
+          if (rect.width === 0 && rect.height === 0) return; // Ignore invalid rects
+
+          // Position the toolbar above the selection
+          const toolbarHeight = toolbar.offsetHeight || 40; // Estimate height if not rendered
+          let top = window.scrollY + rect.top - toolbarHeight - 8;
+          let left = window.scrollX + rect.left + (rect.width / 2) - (toolbar.offsetWidth / 2);
+
+          // Boundary checks to keep toolbar on screen
+          if (top < window.scrollY) { // If it's off-screen at the top, place it below
+            top = window.scrollY + rect.bottom + 8;
+          }
+          left = Math.max(window.scrollX + 8, Math.min(left, window.scrollX + window.innerWidth - toolbar.offsetWidth - 8));
+
+          toolbar.style.top = `${top}px`;
+          toolbar.style.left = `${left}px`;
+          toolbar.style.display = 'inline-flex';
+          toolbar.style.opacity = '1';
+          return;
         }
       }
 
-      return isOverlay;
-    }
+      // Hide the toolbar if no valid selection is found
+      toolbar.style.opacity = '0';
+      hideTimeout = setTimeout(() => {
+        toolbar.style.display = 'none';
+        }, 200); // Delay hiding to prevent flickering
+      }, 300); // Debounce delay
+    };
 
-    // Strategy 2: Find the EXACT ql-editor element
-    findTargetInput() {
-      console.log('🎯 Looking for the exact ql-editor element...');
-
-      // EXACT selectors based on the provided element structure
-      const exactSelectors = [
-        // Most specific - the exact element
-        '.ql-editor[data-placeholder="What do you want to talk about?"][data-test-ql-editor-contenteditable="true"]',
-        '.ql-editor[aria-placeholder="What do you want to talk about?"]',
-        '.ql-editor[aria-label="Text editor for creating content"]',
-
-        // Fallback with data attributes
-        '.ql-editor[data-test-ql-editor-contenteditable="true"]',
-        '.ql-editor[data-placeholder*="What do you want to talk about"]',
-
-        // General ql-editor with role textbox
-        '.ql-editor[role="textbox"][contenteditable="true"]',
-        '.ql-editor[contenteditable="true"]'
-      ];
-
-      // Try each exact selector
-      for (const selector of exactSelectors) {
-        const elements = document.querySelectorAll(selector);
-        console.log(`🔍 Exact selector "${selector}" found ${elements.length} elements`);
-
-        for (const element of elements) {
-          if (this.isExactTargetElement(element)) {
-            console.log('✅ FOUND EXACT TARGET ELEMENT:', element);
-            console.log('✅ Element details:', {
-              className: element.className,
-              dataPlaceholder: element.getAttribute('data-placeholder'),
-              ariaPlaceholder: element.getAttribute('aria-placeholder'),
-              ariaLabel: element.getAttribute('aria-label'),
-              role: element.getAttribute('role'),
-              dataTestAttr: element.getAttribute('data-test-ql-editor-contenteditable')
-            });
-            return element;
-          }
-        }
-      }
-
-      console.log('❌ Exact target element not found');
-      this.debugAllInputs();
-      return null;
-    }
-
-    // Strategy 3: Validate EXACT Target Element
-    isExactTargetElement(element) {
-      if (!element) {
-        console.log('❌ Element is null/undefined');
-        return false;
-      }
-
-      // Must be contenteditable
-      if (!element.hasAttribute('contenteditable') || element.getAttribute('contenteditable') !== 'true') {
-        console.log('❌ Element not contenteditable');
-        return false;
-      }
-
-      // Must be visible
-      const rect = element.getBoundingClientRect();
-      if (rect.width === 0 || rect.height === 0) {
-        console.log('❌ Element not visible', rect);
-        return false;
-      }
-
-      // Check if already injected
-      if (this.injectedElements.has(element)) {
-        console.log('❌ Already injected for this element');
-        return false;
-      }
-
-      // Check for existing toolbar nearby
-      if (this.hasNearbyToolbar(element)) {
-        console.log('❌ Toolbar already exists nearby');
-        return false;
-      }
-
-      // EXACT validation for the specific ql-editor
-      const isExactElement =
-        element.classList.contains('ql-editor') &&
-        (
-          element.getAttribute('data-placeholder') === 'What do you want to talk about?' ||
-          element.getAttribute('aria-placeholder') === 'What do you want to talk about?' ||
-          element.getAttribute('aria-label') === 'Text editor for creating content' ||
-          element.getAttribute('data-test-ql-editor-contenteditable') === 'true'
-        );
-
-      if (!isExactElement) {
-        console.log('❌ Not the exact target element we\'re looking for');
-        return false;
-      }
-
-      console.log('✅ Perfect! This is the exact element we want');
-      return true;
-    }
-
-    // Strategy 4: Multi-Point Injection
-    injectToolbarNearInput(targetInput) {
-      console.log('🚀 Attempting multi-point injection for:', targetInput);
-
-      const strategies = [
-        // Strategy A: Before input's container
-        () => {
-          const container = targetInput.closest('.ql-container') ||
-            targetInput.closest('.share-creation-state') ||
-            targetInput.closest('.share-box') ||
-            targetInput.closest('.composer');
-          if (container && container.parentElement) {
-            const toolbar = buildFormattingToolbar();
-            container.parentElement.insertBefore(toolbar, container);
-            return true;
-          }
-          return false;
-        },
-
-        // Strategy B: After input's container
-        () => {
-          const container = targetInput.closest('.ql-container') ||
-            targetInput.closest('.share-creation-state') ||
-            targetInput.closest('.share-box') ||
-            targetInput.closest('.composer');
-          if (container && container.parentElement) {
-            const toolbar = buildFormattingToolbar();
-            container.parentElement.insertBefore(toolbar, container.nextSibling);
-            return true;
-          }
-          return false;
-        },
-
-        // Strategy C: Before the input itself
-        () => {
-          if (targetInput.parentElement) {
-            const toolbar = buildFormattingToolbar();
-            targetInput.parentElement.insertBefore(toolbar, targetInput);
-            return true;
-          }
-          return false;
-        },
-
-        // Strategy D: After the input itself
-        () => {
-          if (targetInput.parentElement) {
-            const toolbar = buildFormattingToolbar();
-            targetInput.parentElement.insertBefore(toolbar, targetInput.nextSibling);
-            return true;
-          }
-          return false;
-        },
-
-        // Strategy E: Append to parent
-        () => {
-          if (targetInput.parentElement) {
-            const toolbar = buildFormattingToolbar();
-            targetInput.parentElement.appendChild(toolbar);
-            return true;
-          }
-          return false;
-        }
-      ];
-
-      for (let i = 0; i < strategies.length; i++) {
-        try {
-          console.log(`🎯 Trying injection strategy ${String.fromCharCode(65 + i)}...`);
-          if (strategies[i]()) {
-            console.log(`✅ SUCCESS! Strategy ${String.fromCharCode(65 + i)} worked`);
-            this.injectedElements.add(targetInput);
-            return true;
-          }
-        } catch (error) {
-          console.log(`❌ Strategy ${String.fromCharCode(65 + i)} failed:`, error);
-        }
-      }
-
-      console.log('❌ All injection strategies failed');
-      return false;
-    }
-
-    // Helper: Check for nearby toolbar
-    hasNearbyToolbar(element) {
-      const searchContainers = [
-        element.parentElement,
-        element.closest('.share-creation-state'),
-        element.closest('.share-box'),
-        element.closest('.composer'),
-        element.closest('.ql-container')?.parentElement
-      ];
-
-      for (const container of searchContainers) {
-        if (container?.querySelector('.lk-formatter-toolbar')) {
-          return true;
-        }
-      }
-
-      return false;
-    }
-
-    // Debug function
-    debugAllInputs() {
-      const allInputs = document.querySelectorAll('[contenteditable], input, textarea');
-      console.log(`🔍 DEBUG: Found ${allInputs.length} total input elements:`);
-
-      allInputs.forEach((el, i) => {
-        const rect = el.getBoundingClientRect();
-        console.log(`  ${i + 1}:`, {
-          tagName: el.tagName,
-          type: el.type,
-          className: el.className,
-          placeholder: el.getAttribute('placeholder') || el.getAttribute('data-placeholder'),
-          contentEditable: el.getAttribute('contenteditable'),
-          visible: rect.width > 0 && rect.height > 0,
-          rect: { width: rect.width, height: rect.height }
-        });
-      });
-    }
-
-    // Strategy 5: Overlay Mode with Page Load Delay
-    startOverlayMode() {
-      console.log('🔥 OVERLAY MODE ACTIVATED - Waiting for page to fully load...');
-
-      if (this.overlayPollingInterval) {
-        clearInterval(this.overlayPollingInterval);
-      }
-
-      // Wait 3 seconds for page to fully load before starting aggressive polling
-      console.log('⏳ Waiting 3 seconds for page to fully load...');
-      setTimeout(() => {
-        console.log('🚀 Page load wait complete, starting aggressive detection');
-
-        let attempts = 0;
-        this.overlayPollingInterval = setInterval(() => {
-          attempts++;
-          console.log(`⚡ Overlay attempt ${attempts}: Looking for exact ql-editor element...`);
-
-          const targetInput = this.findTargetInput();
-          if (targetInput) {
-            if (this.injectToolbarNearInput(targetInput)) {
-              console.log(`🎉 SUCCESS! Toolbar injected on overlay attempt ${attempts}`);
-              this.stopOverlayMode();
-            }
-          }
-
-          if (attempts > 50) { // Stop after 10 seconds of trying
-            console.log('⏰ Overlay polling timeout after 50 attempts');
-            this.stopOverlayMode();
-          }
-        }, 200);
-      }, 3000); // 3 second delay
-    }
-
-    stopOverlayMode() {
-      if (this.overlayPollingInterval) {
-        clearInterval(this.overlayPollingInterval);
-        this.overlayPollingInterval = null;
-        console.log('🛑 Overlay mode stopped');
-      }
-    }
-
-    // Strategy 6: Regular Mode (Conservative)
-    startRegularMode() {
-      console.log('🔄 Regular mode: Periodic scanning');
-
-      // Scan every 3 seconds
-      this.regularPollingInterval = setInterval(() => {
-        console.log('🔄 Regular scan...');
-        const targetInput = this.findTargetInput();
-        if (targetInput) {
-          this.injectToolbarNearInput(targetInput);
-        }
-      }, 3000);
-    }
-
-    // Strategy 7: Real-time DOM Monitoring
-    setupDOMObserver() {
-      const observer = new MutationObserver((mutations) => {
-        let shouldScan = false;
-
-        mutations.forEach(mutation => {
-          mutation.addedNodes.forEach(node => {
-            if (node instanceof HTMLElement &&
-              !node.classList?.contains('lk-formatter-toolbar')) {
-
-              if (node.matches('[contenteditable], .share-creation-state, .share-box, .composer') ||
-                node.querySelector('[contenteditable]')) {
-                shouldScan = true;
-              }
-            }
-          });
-        });
-
-        if (shouldScan) {
-          console.log('📡 DOM change detected, scanning...');
-          setTimeout(() => {
-            const targetInput = this.findTargetInput();
-            if (targetInput) {
-              this.injectToolbarNearInput(targetInput);
-            }
-          }, 500);
-        }
-      });
-
-      observer.observe(document.body, {
-        childList: true,
-        subtree: true
-      });
-
-      this.observers.push(observer);
-    }
-
-    // Strategy 8: URL Monitoring
-    setupURLMonitoring() {
-      setInterval(() => {
-        if (location.href !== this.currentUrl) {
-          console.log(`🌐 URL changed: ${this.currentUrl} → ${location.href}`);
-          this.currentUrl = location.href;
-          this.checkCreatePostOverlay();
-
-          // Clean up injection tracking on navigation
-          this.injectedElements = new WeakSet();
-
-          // Immediate scan after URL change
-          setTimeout(() => {
-            const targetInput = this.findTargetInput();
-            if (targetInput) {
-              this.injectToolbarNearInput(targetInput);
-            }
-          }, 1000);
-        }
-      }, 500);
-    }
-
-    // Initialize everything
-    initialize() {
-      console.log('🔥 LinkedIn Formatter v7.0: Universal LinkedIn Profile Support Initialized');
-      console.log('🎯 Supported styles:', Object.keys(STYLE_MAPS));
-      console.log('🌐 Current URL:', this.currentUrl);
-
-      // Initialize all strategies
-      this.checkCreatePostOverlay();
-      this.setupDOMObserver();
-      this.setupURLMonitoring();
-      this.startRegularMode();
-
-      // Initial scan with proper delay
-      setTimeout(() => {
-        console.log('🚀 Running initial scan...');
-        if (this.isCreatePostOverlay) {
-          console.log('🎯 In overlay - waiting for element to be ready...');
-          // Don't run initial scan in overlay mode, let the overlay mode handle it
-        } else {
-          const targetInput = this.findTargetInput();
-          if (targetInput) {
-            this.injectToolbarNearInput(targetInput);
-          }
-        }
-      }, 1000);
-
-      console.log('✅ All strategies activated and monitoring started');
-    }
+    document.addEventListener('selectionchange', handleSelectionChange);
+    console.log('✅ Floating toolbar is active and listening for text selections.');
   }
-
-  // Create and initialize the ultimate formatter
-  const ultimateFormatter = new UltimateLinkedInFormatter();
 
   // Start the system
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => ultimateFormatter.initialize());
+    document.addEventListener('DOMContentLoaded', initializeFloatingToolbar);
   } else {
-    ultimateFormatter.initialize();
+    initializeFloatingToolbar();
   }
 
 })();

@@ -1,11 +1,17 @@
 
 /* LinkedIn Formatter - styles.css */
 .lk-formatter-toolbar {
-  display: inline-flex;
-  gap: 6px;
-  margin: 8px 0;
+  position: absolute; /* Changed for floating behavior */
+  display: none; /* Initially hidden */
+  gap: 4px;
   align-items: center;
-  position: relative;
+  background: #ffffff; /* Light theme to blend with LinkedIn */
+  padding: 6px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  border: 1px solid #e0e0e0; /* Subtle border for light theme */
+  z-index: 10000;
+  transition: opacity 0.1s ease-in-out;
 }
 .lk-formatter-toolbar .lk-btn {
   border: 1px solid rgba(0,0,0,0.12);

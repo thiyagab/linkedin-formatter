@@ -1,12 +1,12 @@
-# LinkedIn Formatter - Chrome Extension
+# LinkedIn AI Post Formatter - Chrome Extension
 
 ## Overview
 
-LinkedIn Formatter is a powerful Chrome extension that enhances your LinkedIn posting experience by injecting a customizable formatting toolbar directly into the LinkedIn post composer. It supports Unicode-based text styling (bold, italic, monospace, etc.), list formatting with customizable bullets, and AI-powered text polishing using providers like OpenAI, Google Gemini, or OpenRouter. The toolbar appears automatically when you start a new post on LinkedIn.
+**LinkedIn AI Post Formatter** is a powerful Chrome extension that enhances your LinkedIn posting experience by injecting a customizable formatting toolbar directly into the LinkedIn post composer. It supports Unicode-based text styling (bold, italic, monospace, etc.), list formatting with customizable bullets, and AI-powered text polishing using providers like OpenAI, Google Gemini, or OpenRouter. The toolbar appears automatically when you select text in the LinkedIn post editor.
 
 This extension uses Unicode Mathematical Alphanumeric Symbols for formatting, ensuring compatibility across platforms like LinkedIn, Twitter/X, Instagram, and more. It also handles reversal of existing Unicode formatting back to normal text.
 
-**Version:** 7.0 (Content Script) / 1.3 (Manifest - consider updating)
+**Version:** 7.0 (Content Script) / 1.4 (Manifest)
 
 ## Features
 
@@ -45,7 +45,7 @@ This extension uses Unicode Mathematical Alphanumeric Symbols for formatting, en
 ## Installation (Developer Mode)
 
 1. Download or clone this repository and extract/unzip to a folder (e.g., `linkedin-formatter`).
-
+ 
 2. Open Chrome and navigate to `chrome://extensions/`.
 
 3. Enable **Developer mode** (toggle in the top-right corner).
@@ -53,9 +53,9 @@ This extension uses Unicode Mathematical Alphanumeric Symbols for formatting, en
 4. Click **Load unpacked** and select the extracted folder.
 
 5. The extension icon (if added) will appear in your toolbar, but it's primarily a content script—no popup needed.
-
+ 
 6. Visit [LinkedIn.com](https://www.linkedin.com), click **Start a post** (or equivalent), and the toolbar should appear above the editor.
-
+ 
 **Note:** Reload the extension in `chrome://extensions/` after any file changes.
 
 ## Usage
@@ -64,7 +64,7 @@ This extension uses Unicode Mathematical Alphanumeric Symbols for formatting, en
    - Log in to LinkedIn.
    - Click **Start a post**, **Write a post**, or open the post composer (e.g., from feed, profile, or messaging).
    - The toolbar (gray bar with buttons) injects automatically above the text editor when text is selected.
-
+ 
 2. **Basic Formatting:**
    - Type or paste text into the LinkedIn editor.
    - Select the text you want to format.
@@ -118,7 +118,7 @@ This extension uses Unicode Mathematical Alphanumeric Symbols for formatting, en
 - **LinkedIn Changes:** If toolbar stops appearing, LinkedIn updated their DOM. Check console logs and update selectors in `content.js` (e.g., `.ql-editor`).
 - **AI Usage:** Polishing may incur costs; test with free tiers. Prompts are fixed—customize in code if needed.
 - **Security:** Extension requests minimal permissions. Review `manifest.json` before loading.
-- **Development:** Logs prefixed with "LinkedIn Formatter" in console. No build step—edit files directly.
+- **Development:** Logs prefixed with "LinkedIn AI Post Formatter" in console. No build step—edit files directly.
 - **Updates:** For production, consider publishing to Chrome Web Store (add icons, descriptions).
 
 ## Contributing
